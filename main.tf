@@ -11,7 +11,7 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Automatically gets your home network's IP when you run it
+# Automatically gets your home network's IP when you run it from the Jump Server
 data "http" "my_home_ip" {
   url = "https://checkip.amazonaws.com"
 }
@@ -78,7 +78,7 @@ resource "aws_security_group" "db_sg" {
   ingress {
     from_port       = 3306
     to_port         = 3306
-    protocol    = "tcp"
+    protocol        = "tcp"
     security_groups = [aws_security_group.backend_sg.id]
   }
 
@@ -104,9 +104,10 @@ resource "aws_iam_role" "ec2_describe_role" {
   })
 }
 
+# FIX: Added the missing "iam::aws:" section to the Managed Policy ARN
 resource "aws_iam_role_policy_attachment" "attach_readonly" {
   role       = aws_iam_role.ec2_describe_role.name
-  policy_arn = "arn:aws:policy/AmazonEC2ReadOnlyAccess"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess" 
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
@@ -114,12 +115,22 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   role = aws_iam_role.ec2_describe_role.name
 }
 
-# 4. Creating the 4 Managed Instances (Excluding your current jump server)
+# Automated User Data script to install Java 21 on Amazon Linux 2023
+locals {
+  java_setup_script = <<-EOF
+    #!/bin/bash
+    sudo dnf update -y
+    sudo dnf install -y java-21-amazon-corretto-devel
+  EOF
+}
+
+# 4. Creating the 4 Managed Instances (FIX: Changed instance_profile to iam_instance_profile)
 resource "aws_instance" "api_gateway" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.gateway_sg.id]
-  instance_profile       = aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  user_data              = local.java_setup_script
   tags                   = { Name = "flipflop-api-gateway" }
 }
 
@@ -127,7 +138,8 @@ resource "aws_instance" "account_service" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  instance_profile       = aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  user_data              = local.java_setup_script
   tags                   = { Name = "flipflop-account-details-service" }
 }
 
@@ -135,7 +147,8 @@ resource "aws_instance" "credit_card_service" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  instance_profile       = aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  user_data              = local.java_setup_script
   tags                   = { Name = "flipflop-credit-card-service" }
 }
 
@@ -143,7 +156,8 @@ resource "aws_instance" "offers_service" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  instance_profile       = aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  user_data              = local.java_setup_script
   tags                   = { Name = "flipflop-offers-service" }
 }
 
