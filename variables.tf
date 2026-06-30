@@ -5,7 +5,7 @@ variable "aws_region" {
 
 variable "ami_id" {
   type    = string
-  default = "ami-03f4878755434977f" # Amazon Linux 2023
+  default = "ami-03f4878755434977f" # Amazon Linux 2023 for ap-south-1
 }
 
 variable "instance_type" {
@@ -13,7 +13,12 @@ variable "instance_type" {
   default = "t3.micro"
 }
 
-variable "db_password" {
-  type      = string
-  sensitive = true
+variable "my_home_ip" {
+  type        = string
+  description = "Your home public IP address (without the /32)"
+}
+
+variable "key_name" {
+  type        = string
+  description = "The name of your existing AWS EC2 Key Pair to allow SSH access"
 }
