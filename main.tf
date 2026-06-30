@@ -11,30 +11,28 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Automatically gets your home network's IP when you run it from the Jump Server
-data "http" "my_home_ip" {
-  url = "https://checkip.amazonaws.com"
-}
+# Isolated Security Group for the single API Gateway testing environment
+resource "aws_security_group" "standalone_gateway_sg" {
+  name        = "flipflop-standalone-gateway-sg"
+  description = "Inbound boundary for testing the API Gateway hello endpoint"
 
-# 1. API Gateway Security Group (Allows your house to connect)
-resource "aws_security_group" "gateway_sg" {
-  name        = "flipflop-gateway-sg"
-  description = "Public inbound traffic to API Gateway"
-
+  # SSH Access restricted to your home IP
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["${chomp(data.http.my_home_ip.response_body)}/32"]
+    cidr_blocks = ["${var.my_home_ip}/32"]
   }
 
+  # Spring Boot Application Access restricted to your home IP
   ingress {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
-    cidr_blocks = ["${chomp(data.http.my_home_ip.response_body)}/32"]
+    cidr_blocks = ["${var.my_home_ip}/32"]
   }
 
+  # Outbound rules allowing the instance to download updates/packages from the internet
   egress {
     from_port   = 0
     to_port     = 0
@@ -43,79 +41,7 @@ resource "aws_security_group" "gateway_sg" {
   }
 }
 
-# 2. Backend Microservices Security Group
-resource "aws_security_group" "backend_sg" {
-  name        = "flipflop-backend-sg"
-  description = "Internal communications routing"
-
-  ingress {
-    from_port       = 8081
-    to_port         = 8083
-    protocol        = "tcp"
-    security_groups = [aws_security_group.gateway_sg.id]
-  }
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allows easy cross-ssh from your management node
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# 3. Isolated MySQL Database Security Group
-resource "aws_security_group" "db_sg" {
-  name        = "flipflop-db-sg"
-  description = "Allows MySQL entry strictly from backend servers"
-
-  ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.backend_sg.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# Shared IAM policy profile for the newly created instances
-resource "aws_iam_role" "ec2_describe_role" {
-  name = "flipflop-cluster-describe-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
-    }]
-  })
-}
-
-# FIX: Added the missing "iam::aws:" section to the Managed Policy ARN
-resource "aws_iam_role_policy_attachment" "attach_readonly" {
-  role       = aws_iam_role.ec2_describe_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess" 
-}
-
-resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "flipflop-cluster-profile"
-  role = aws_iam_role.ec2_describe_role.name
-}
-
-# Automated User Data script to install Java 21 on Amazon Linux 2023
+# User Data script execution block to automatically provision the Java 21 runtime engine
 locals {
   java_setup_script = <<-EOF
     #!/bin/bash
@@ -124,58 +50,21 @@ locals {
   EOF
 }
 
-# 4. Creating the 4 Managed Instances (FIX: Changed instance_profile to iam_instance_profile)
-resource "aws_instance" "api_gateway" {
+# Single Standalone API Gateway EC2 Instance
+resource "aws_instance" "standalone_gateway" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
-  vpc_security_group_ids = [aws_security_group.gateway_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  vpc_security_group_ids = [aws_security_group.standalone_gateway_sg.id]
+  key_name               = var.key_name
   user_data              = local.java_setup_script
-  tags                   = { Name = "flipflop-api-gateway" }
+
+  tags = {
+    Name = "flipflop-standalone-api-gateway"
+  }
 }
 
-resource "aws_instance" "account_service" {
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-  user_data              = local.java_setup_script
-  tags                   = { Name = "flipflop-account-details-service" }
-}
-
-resource "aws_instance" "credit_card_service" {
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-  user_data              = local.java_setup_script
-  tags                   = { Name = "flipflop-credit-card-service" }
-}
-
-resource "aws_instance" "offers_service" {
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-  user_data              = local.java_setup_script
-  tags                   = { Name = "flipflop-offers-service" }
-}
-
-# 5th Instance: MySQL Engine
-resource "aws_instance" "mysql_db" {
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  vpc_security_group_ids = [aws_security_group.db_sg.id]
-  tags                   = { Name = "flipflop-mysql-db" }
-
-  user_data = <<-EOF
-              #!/bin/bash
-              mkdir -p /etc/flipflop
-              echo "MYSQL_DB_PASSWORD=${var.db_password}" > /etc/flipflop/db.env
-              chmod 600 /etc/flipflop/db.env
-              EOF
-}
-
+# Output the Public IP address so you can access your endpoint immediately
 output "gateway_public_ip" {
-  value = aws_instance.api_gateway.public_ip
+  value       = aws_instance.standalone_gateway.public_ip
+  description = "The public IP address to hit your /hello endpoint"
 }
