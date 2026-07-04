@@ -11,6 +11,12 @@ provider "aws" {
   region = var.aws_region
 }
 
+# 1. NEW: IAM Instance Profile to give EC2 permission to read from S3
+resource "aws_iam_instance_profile" "standalone_gateway_profile" {
+  name = "flipflop-standalone-gateway-s3-profile"
+  role = "flipflop-ec2-admin-role" # Reuses your pre-existing role fixed with iam:PassRole
+}
+
 # Isolated Security Group for the single API Gateway testing environment
 resource "aws_security_group" "standalone_gateway_sg" {
   name        = "flipflop-standalone-gateway-sg"
@@ -41,12 +47,25 @@ resource "aws_security_group" "standalone_gateway_sg" {
   }
 }
 
-# User Data script execution block to automatically provision the Java 21 runtime engine
+# ENHANCED: User Data script to install Java 21, pull the JAR from S3, and execute it
 locals {
   java_setup_script = <<-EOF
     #!/bin/bash
+    # 1. Upgrade packages and install Java 21 Runtime (Corretto)
     sudo dnf update -y
     sudo dnf install -y java-21-amazon-corretto-devel
+
+    # 2. Build dedicated deployment directory
+    sudo mkdir -p /app
+    sudo chown -R ec2-user:ec2-user /app
+    cd /app
+
+    # 3. Download the target gateway microservice JAR from your private S3 bucket
+    # Note: If your AMI does not have aws-cli built-in, dnf install -y awscli can be added above
+    aws s3 cp s3://flip-flop-bucket/flipflop-api-gateway.jar /app/flipflop-api-gateway.jar
+
+    # 4. Spin up the Spring Boot app in the background, channeling runtime out to a log file
+    nohup java -jar /app/flipflop-api-gateway.jar > /app/gateway.log 2>&1 &
   EOF
 }
 
@@ -56,6 +75,9 @@ resource "aws_instance" "standalone_gateway" {
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.standalone_gateway_sg.id]
   key_name               = var.key_name
+  
+  # ENHANCED: Injected the S3 profile and startup logic parameters
+  iam_instance_profile   = aws_iam_instance_profile.standalone_gateway_profile.name
   user_data              = local.java_setup_script
 
   tags = {
