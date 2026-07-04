@@ -4,16 +4,17 @@ variable "aws_region" {
 }
 
 variable "ami_id" {
-  type    = string
-  default = "ami-03f4878755434977f" # Amazon Linux 2023
+  type        = string
+  description = "Shared AMI ID used for Jump, Gateway, DB, and Apps"
+  default     = "ami-0d351f1b760a30161"
 }
 
-variable "instance_type" {
-  type    = string
-  default = "t3.micro"
+variable "key_name" {
+  type        = string
+  description = "The keypair name used to SSH into instances"
 }
 
-variable "db_password" {
-  type      = string
-  sensitive = true
+variable "my_home_ip" {
+  type        = string
+  description = "Your local laptop public IP address (without /32)"
 }
