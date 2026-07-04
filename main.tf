@@ -11,12 +11,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-# 1. NEW: IAM Instance Profile to give EC2 permission to read from S3
-resource "aws_iam_instance_profile" "standalone_gateway_profile" {
-  name = "flipflop-standalone-gateway-s3-profile"
-  role = "flipflop-ec2-admin-role" # Reuses your pre-existing role fixed with iam:PassRole
-}
-
 # Isolated Security Group for the single API Gateway testing environment
 resource "aws_security_group" "standalone_gateway_sg" {
   name        = "flipflop-standalone-gateway-sg"
@@ -77,7 +71,7 @@ resource "aws_instance" "standalone_gateway" {
   key_name               = var.key_name
   
   # ENHANCED: Injected the S3 profile and startup logic parameters
-  iam_instance_profile   = aws_iam_instance_profile.standalone_gateway_profile.name
+  iam_instance_profile   = flipflop-ec2-admin-role
   user_data              = local.java_setup_script
 
   tags = {
