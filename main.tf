@@ -56,7 +56,7 @@ locals {
 
     # 3. Download the target gateway microservice JAR from your private S3 bucket
     # Note: If your AMI does not have aws-cli built-in, dnf install -y awscli can be added above
-    aws s3 cp s3://flip-flop-bucket/flipflop-api-gateway.jar /app/flipflop-api-gateway.jar
+    aws s3 cp s3://flip-flop-bucket/flipflop-api-gateway/flipflop-api-gateway-0.0.1-SNAPSHOT.jar /app/flipflop-api-gateway.jar
 
     # 4. Spin up the Spring Boot app in the background, channeling runtime out to a log file
     nohup java -jar /app/flipflop-api-gateway.jar > /app/gateway.log 2>&1 &
