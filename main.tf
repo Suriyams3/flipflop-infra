@@ -71,7 +71,7 @@ resource "aws_instance" "standalone_gateway" {
   key_name               = var.key_name
   
   # ENHANCED: Injected the S3 profile and startup logic parameters
-  iam_instance_profile   = "flipflop-ec2-admin-role"
+  iam_instance_profile   = "flipflop-service-role"
   user_data              = local.java_setup_script
 
   tags = {
