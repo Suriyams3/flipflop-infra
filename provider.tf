@@ -13,9 +13,6 @@ provider "aws" {
 }
 
 # Common IAM Instance Profile used across your servers
-data "aws_iam_instance_profile" "ec2_profile" {
-  name = "flipflop-service-role"
-}
 
 # Dynamic lookup block for your region's Default AWS Network
 data "aws_vpc" "default_network" {
