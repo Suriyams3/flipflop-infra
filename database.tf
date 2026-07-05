@@ -35,20 +35,65 @@ resource "aws_instance" "db_server" {
 
   user_data = <<-EOF
               #!/bin/bash
+              # Redirect stdout and stderr to standard log location
               exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-              dnf update -y
-              dnf install -y mariadb-server
-              systemctl start mariadb
-              systemctl enable mariadb
 
+              echo "=== Starting Native MySQL Server Installation ==="
+              dnf update -y
+
+              # 1. Install standard community repository and native MySQL Community Server
+              dnf install -y https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
+              dnf install -y mysql-community-server
+
+              # 2. Boot engine and ensure it launches on machine startup
+              systemctl start mysqld
+              systemctl enable mysqld
+
+              echo "=== Extracting Temp Root Password & Adjusting Permissions ==="
+              # Fetch the auto-generated temporary root password
+              TEMP_ROOT_PASS=$(grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}')
+
+              # Setup primary application user parameters
               cat << 'SQL_EOF' > /tmp/setup.sql
-              CREATE DATABASE IF NOT EXISTS flipflop_account_db;
+              -- ====================================================================
+              -- SCHEMA 1: CREDIT CARD MICROSERVICE DATABASE
+              -- ====================================================================
+              CREATE DATABASE IF NOT EXISTS flipflop_creditcard_db;
+
+              -- Establish isolated database runtime credentials across schemas
               CREATE USER IF NOT EXISTS 'db_user'@'%' IDENTIFIED BY 'FlipFlopSecurePass123!';
+              GRANT ALL PRIVILEGES ON flipflop_creditcard_db.* TO 'db_user'@'%';
+
+              USE flipflop_creditcard_db;
+
+              -- Create table mapping to the JPA CreditCardDetails Entity
+              CREATE TABLE IF NOT EXISTS credit_card_details (
+                  account_number VARCHAR(255) NOT NULL,
+                  credit_card_number VARCHAR(255) NOT NULL UNIQUE,
+                  expiry_date DATE NOT NULL,
+                  credit_points_available INT NOT NULL,
+                  credit_points_expiry_date DATE NULL,
+                  cibil_score INT NOT NULL,
+                  PRIMARY KEY (account_number)
+              );
+
+              -- Seed Mock Data matching entity signatures
+              INSERT INTO credit_card_details (
+                  account_number, credit_card_number, expiry_date, credit_points_available, credit_points_expiry_date, cibil_score
+              ) VALUES
+              ('ACC1001', '4111-2222-3333-4444', '2031-05-31', 4500, '2027-12-31', 780),
+              ('ACC1002', '5555-6666-7777-8888', '2029-08-15', 12050, '2028-06-30', 815),
+              ('ACC1003', '3782-9999-1111-2222', '2030-11-30', 0, NULL, 650);
+
+              -- ====================================================================
+              -- SCHEMA 2: ACCOUNT/PROFILE MICROSERVICE DATABASE
+              -- ====================================================================
+              CREATE DATABASE IF NOT EXISTS flipflop_account_db;
               GRANT ALL PRIVILEGES ON flipflop_account_db.* TO 'db_user'@'%';
-              FLUSH PRIVILEGES;
+
               USE flipflop_account_db;
 
-              -- 1. Create the Independent Parent Table (ProfileDetails)
+              -- Create Independent Parent Table (ProfileDetails Entity)
               CREATE TABLE IF NOT EXISTS profile_details (
                   account_number VARCHAR(255) NOT NULL,
                   first_name VARCHAR(100) NOT NULL,
@@ -61,7 +106,7 @@ resource "aws_instance" "db_server" {
                   PRIMARY KEY (account_number)
               );
 
-              -- 2. Create the Dependent Child Table (AccountDetails)
+              -- Create Dependent Child Table (AccountDetails Entity)
               CREATE TABLE IF NOT EXISTS account_details (
                   account_number VARCHAR(255) NOT NULL,
                   account_balance DECIMAL(38, 2) NOT NULL,
@@ -73,7 +118,7 @@ resource "aws_instance" "db_server" {
                       REFERENCES profile_details(account_number) ON DELETE CASCADE
               );
 
-              -- 1. Insert Profile Records First
+              -- Seed Profile Records First
               INSERT INTO profile_details (
                   account_number, first_name, last_name, age, sex, marital_status, address, phone_number
               ) VALUES
@@ -81,16 +126,52 @@ resource "aws_instance" "db_server" {
               ('ACC1002', 'Alice', 'Smith', 28, 'Female', 'Single', '456 Microservice Lane, New York NY', '+1-555-0144'),
               ('ACC1003', 'Robert', 'Miller', 42, 'Male', 'Divorced', '789 Infrastructure Blvd, Seattle WA', '+1-555-0177');
 
-              -- 2. Insert Matching Account Mappings
+              -- Seed Matching Account Mappings Second
               INSERT INTO account_details (
                   account_number, account_balance, account_open_date, debit_card_number, debit_card_expiry_date
               ) VALUES
               ('ACC1001', 5420.50, '2025-01-15', '4321-5678-9012-3456', '2030-12-31'),
               ('ACC1002', 120500.00, '2024-06-20', '5105-1234-5678-9988', '2029-08-31'),
               ('ACC1003', 0.00, '2026-03-01', NULL, NULL);
+
+              -- ====================================================================
+              -- SCHEMA 3: CREDIT CARD OFFERS DATABASE
+              -- ====================================================================
+              CREATE DATABASE IF NOT EXISTS flipflop_offers_db;
+              GRANT ALL PRIVILEGES ON flipflop_offers_db.* TO 'db_user'@'%';
+              FLUSH PRIVILEGES;
+
+              USE flipflop_offers_db;
+
+              -- Create table mapping to the JPA CreditCardOffer Entity
+              CREATE TABLE IF NOT EXISTS credit_card_offers (
+                  offer_id INT AUTO_INCREMENT,
+                  offer_name VARCHAR(255) NOT NULL,
+                  sponsor_name VARCHAR(255) NOT NULL,
+                  offer_valid_upto DATE NOT NULL,
+                  discount_percentage DECIMAL(5, 2) NOT NULL, -- Precision for standard percentages (e.g., 15.50%)
+                  offer_description VARCHAR(500) NULL,
+                  reward_points_required INT NOT NULL,
+                  cibil_score_required INT NOT NULL,
+                  PRIMARY KEY (offer_id)
+              );
+
+              -- Seed Mock Data (Omitting offer_id lets AUTO_INCREMENT generate them)
+              INSERT INTO credit_card_offers (
+                  offer_name, sponsor_name, offer_valid_upto, discount_percentage, offer_description, reward_points_required, cibil_score_required
+              ) VALUES
+              ('Premium Lounge Access', 'Priority Pass', '2026-12-31', 100.00, 'Free international airport lounge entries.', 5000, 750),
+              ('Amazon Shopping Bonanza', 'Amazon Pay', '2026-09-30', 10.00, 'Flat 10% discount on electronics purchases.', 1500, 700),
+              ('Fuel Surcharge Waiver', 'IndianOil', '2027-03-31', 2.50, 'Fuel savings across partner outlet stations.', 0, 650);
               SQL_EOF
 
-              mysql < /tmp/setup.sql
+              # 5. Connect and execute scripts securely using temporary instance token
+              mysql --connect-expired-password -u root -p"$TEMP_ROOT_PASS" --execute="ALTER USER 'root'@'localhost' IDENTIFIED BY 'FlipFlopRootPass123!';"
+
+              # 6. Apply final application script tables using updated root auth
+              mysql -u root -p'FlipFlopRootPass123!' < /tmp/setup.sql
+
+              echo "=== MySQL Database Setup Complete ==="
               EOF
 
   tags = { Name = "flipflop-database-server" }
