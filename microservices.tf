@@ -83,7 +83,7 @@ resource "aws_instance" "flipflop-credit-card-offers-service" {
               mkdir -p /app
               export DB_HOST="${aws_instance.db_server.private_ip}"
 
-              aws s3 cp s3://flip-flop-bucket/flipflop-credit-card-offers-service.jar /app/flipflop-credit-card-offers-service.jar
+              aws s3 cp s3://flip-flop-bucket/flipflop-credit-card-offers-service/flipflop-credit-card-offers-service.jar /app/flipflop-credit-card-offers-service.jar
               nohup java -jar /app/flipflop-credit-card-offers-service.jar > /app/flipflop-credit-card-offers-service.log 2>&1 &
               EOF
 
