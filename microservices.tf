@@ -31,7 +31,7 @@ resource "aws_instance" "flipflop-account-details-service" {
               #!/bin/bash
               exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
               dnf update -y
-              dnf install java-17-amazon-corretto-headless -y
+              dnf install java-21-amazon-corretto-headless -y
               mkdir -p /app
 
               # Set backend database profile parameters using interpolation
@@ -56,7 +56,7 @@ resource "aws_instance" "flipflop-credit-card-service" {
               #!/bin/bash
               exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
               dnf update -y
-              dnf install java-17-amazon-corretto-headless -y
+              dnf install java-21-amazon-corretto-headless -y
               mkdir -p /app
               export DB_HOST="${aws_instance.db_server.private_ip}"
 
@@ -79,7 +79,7 @@ resource "aws_instance" "flipflop-credit-card-offers-service" {
               #!/bin/bash
               exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
               dnf update -y
-              dnf install java-17-amazon-corretto-headless -y
+              dnf install java-21-amazon-corretto-headless -y
               mkdir -p /app
               export DB_HOST="${aws_instance.db_server.private_ip}"
 
