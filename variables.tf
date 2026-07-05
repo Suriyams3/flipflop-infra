@@ -12,6 +12,7 @@ variable "ami_id" {
 variable "key_name" {
   type        = string
   description = "The keypair name used to SSH into instances"
+  default = "ApsKeyPair"
 }
 
 variable "my_home_ip" {
