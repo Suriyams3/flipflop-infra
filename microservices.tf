@@ -20,9 +20,9 @@ resource "aws_security_group" "microservices_sg" {
 }
 
 # Service 1: Account Service
-resource "aws_instance" "account_service" {
+resource "aws_instance" "flipflop-account-details-service" {
   ami                  = var.ami_id
-  instance_type        = "t3.micro"
+  instance_type        = "t2.micro"
   key_name             = var.key_name
   security_groups      = [aws_security_group.microservices_sg.name]
   iam_instance_profile = data.aws_iam_instance_profile.ec2_profile.name
@@ -37,17 +37,17 @@ resource "aws_instance" "account_service" {
               # Set backend database profile parameters using interpolation
               export DB_HOST="${aws_instance.db_server.private_ip}"
 
-              aws s3 cp s3://flipflopbucket/account-service.jar /app/account-service.jar
-              nohup java -jar /app/account-service.jar > /app/account.log 2>&1 &
+              aws s3 cp s3://flip-flop-bucket/flipflop-account-details-service/flipflop-account-details-service-0.0.1-SNAPSHOT.jar /app/account-service.jar
+              nohup java -jar /app/flipflop-account-details-service.jar > /app/flipflop-account-details-service.log 2>&1 &
               EOF
 
-  tags = { Name = "flipflop-account-service" }
+  tags = { Name = "flipflop-account-details-service" }
 }
 
-# Service 2: Inventory Service
-resource "aws_instance" "inventory_service" {
+
+resource "aws_instance" "flipflop-credit-card-service" {
   ami                  = var.ami_id
-  instance_type        = "t3.micro"
+  instance_type        = "t2.micro"
   key_name             = var.key_name
   security_groups      = [aws_security_group.microservices_sg.name]
   iam_instance_profile = data.aws_iam_instance_profile.ec2_profile.name
@@ -60,17 +60,17 @@ resource "aws_instance" "inventory_service" {
               mkdir -p /app
               export DB_HOST="${aws_instance.db_server.private_ip}"
 
-              aws s3 cp s3://flipflopbucket/inventory-service.jar /app/inventory-service.jar
-              nohup java -jar /app/inventory-service.jar > /app/inventory.log 2>&1 &
+              aws s3 cp s3://flip-flop-bucket/flipflop-credit-card-service/flipflop-credit-card-service-0.0.1-SNAPSHOT.jar /app/credit-card-service.jar
+              nohup java -jar /app/flipflop-credit-card-service.jar > /app/flipflop-credit-card-service.log 2>&1 &
               EOF
 
-  tags = { Name = "flipflop-inventory-service" }
+  tags = { Name = "flipflop-credit-card-service" }
 }
 
-# Service 3: Order Service
-resource "aws_instance" "order_service" {
+
+resource "aws_instance" "flipflop-credit-card-offers-service" {
   ami                  = var.ami_id
-  instance_type        = "t3.micro"
+  instance_type        = "t2.micro"
   key_name             = var.key_name
   security_groups      = [aws_security_group.microservices_sg.name]
   iam_instance_profile = data.aws_iam_instance_profile.ec2_profile.name
@@ -83,9 +83,9 @@ resource "aws_instance" "order_service" {
               mkdir -p /app
               export DB_HOST="${aws_instance.db_server.private_ip}"
 
-              aws s3 cp s3://flipflopbucket/order-service.jar /app/order-service.jar
-              nohup java -jar /app/order-service.jar > /app/order.log 2>&1 &
+              aws s3 cp s3://flip-flop-bucket/flipflop-credit-card-offers-service.jar /app/flipflop-credit-card-offers-service.jar
+              nohup java -jar /app/flipflop-credit-card-offers-service.jar > /app/flipflop-credit-card-offers-service.log 2>&1 &
               EOF
 
-  tags = { Name = "flipflop-order-service" }
+  tags = { Name = "flipflop-credit-card-offers-service" }
 }

@@ -28,7 +28,7 @@ resource "aws_security_group" "gateway_sg" {
 
 resource "aws_instance" "api_gateway" {
   ami                  = var.ami_id
-  instance_type        = "t3.micro"
+  instance_type        = "t2.micro"
   key_name             = var.key_name
   security_groups      = [aws_security_group.gateway_sg.name]
   iam_instance_profile = data.aws_iam_instance_profile.ec2_profile.name
@@ -39,7 +39,7 @@ resource "aws_instance" "api_gateway" {
               dnf update -y
               dnf install java-17-amazon-corretto-headless -y
               mkdir -p /app
-              aws s3 cp s3://flipflopbucket/flipflop-api-gateway.jar /app/flipflop-api-gateway.jar
+              aws s3 cp s3://flip-flop-bucket/flipflop-api-gateway/flipflop-api-gateway-0.0.1-SNAPSHOT.jar /app/flipflop-api-gateway.jar
               nohup java -jar /app/flipflop-api-gateway.jar > /app/gateway.log 2>&1 &
               EOF
 
