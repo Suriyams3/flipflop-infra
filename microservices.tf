@@ -25,7 +25,7 @@ resource "aws_instance" "flipflop-account-details-service" {
   instance_type        = "t2.micro"
   key_name             = var.key_name
   security_groups      = [aws_security_group.microservices_sg.name]
-  iam_instance_profile = data.aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile = "flipflop-service-role"
 
   user_data = <<-EOF
               #!/bin/bash
@@ -50,7 +50,7 @@ resource "aws_instance" "flipflop-credit-card-service" {
   instance_type        = "t2.micro"
   key_name             = var.key_name
   security_groups      = [aws_security_group.microservices_sg.name]
-  iam_instance_profile = data.aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile = "flipflop-service-role"
 
   user_data = <<-EOF
               #!/bin/bash
