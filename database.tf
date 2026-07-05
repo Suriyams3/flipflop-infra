@@ -43,7 +43,7 @@ resource "aws_instance" "db_server" {
 
               # 1. Install standard community repository and native MySQL Community Server
               dnf install -y https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
-              dnf install -y mysql-community-server
+              dnf install -y mysql-community-server --nogpgcheck
 
               # 2. Boot engine and ensure it launches on machine startup
               systemctl start mysqld
