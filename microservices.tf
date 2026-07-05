@@ -37,7 +37,7 @@ resource "aws_instance" "flipflop-account-details-service" {
               # Set backend database profile parameters using interpolation
               export DB_HOST="${aws_instance.db_server.private_ip}"
 
-              aws s3 cp s3://flip-flop-bucket/flipflop-account-details-service/flipflop-account-details-service-0.0.1-SNAPSHOT.jar /app/account-service.jar
+              aws s3 cp s3://flip-flop-bucket/jars/flipflop-account-details-service/flipflop-account-details-service-0.0.1-SNAPSHOT.jar /app/account-service.jar
               nohup java -jar /app/flipflop-account-details-service.jar > /app/flipflop-account-details-service.log 2>&1 &
               EOF
 
@@ -60,7 +60,7 @@ resource "aws_instance" "flipflop-credit-card-service" {
               mkdir -p /app
               export DB_HOST="${aws_instance.db_server.private_ip}"
 
-              aws s3 cp s3://flip-flop-bucket/flipflop-credit-card-service/flipflop-credit-card-service-0.0.1-SNAPSHOT.jar /app/credit-card-service.jar
+              aws s3 cp s3://flip-flop-bucket/jars/flipflop-credit-card-service/flipflop-credit-card-service-0.0.1-SNAPSHOT.jar /app/credit-card-service.jar
               nohup java -jar /app/flipflop-credit-card-service.jar > /app/flipflop-credit-card-service.log 2>&1 &
               EOF
 
@@ -83,7 +83,7 @@ resource "aws_instance" "flipflop-credit-card-offers-service" {
               mkdir -p /app
               export DB_HOST="${aws_instance.db_server.private_ip}"
 
-              aws s3 cp s3://flip-flop-bucket/flipflop-credit-card-offers-service/flipflop-credit-card-offers-service.jar /app/flipflop-credit-card-offers-service.jar
+              aws s3 cp s3://flip-flop-bucket/jars/flipflop-credit-card-offers-service/flipflop-credit-card-offers-service.jar /app/flipflop-credit-card-offers-service.jar
               nohup java -jar /app/flipflop-credit-card-offers-service.jar > /app/flipflop-credit-card-offers-service.log 2>&1 &
               EOF
 
