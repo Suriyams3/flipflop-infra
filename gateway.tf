@@ -40,6 +40,8 @@ resource "aws_instance" "api_gateway" {
               dnf install java-21-amazon-corretto-headless -y
               mkdir -p /app
               aws s3 cp s3://flip-flop-bucket/jars/flipflop-api-gateway/flipflop-api-gateway-0.0.1-SNAPSHOT.jar /app/flipflop-api-gateway.jar
+              export CREDITCARD_SERVICE_HOST="${aws_instance.flipflop-credit-card-service.private_ip}"
+              export ACCOUNT_SERVICE_HOST="${aws_instance.flipflop-account-details-service.private_ip}"
               nohup java -jar /app/flipflop-api-gateway.jar > /app/gateway.log 2>&1 &
               EOF
 

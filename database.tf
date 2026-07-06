@@ -44,6 +44,10 @@ resource "aws_instance" "db_server" {
               # 1. Install standard community repository and native MySQL Community Server
               dnf install -y https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
               dnf install -y mysql-community-server --nogpgcheck
+              dnf install jq aws-cli -y
+
+              # 1a. Fetch the secure password straight into memory
+              FETCHED_ROOT_PASS=$(aws secretsmanager get-secret-value --secret-id "flipflop-db-credentials" --region ap-south-1 --query SecretString --output text | jq -r '.db_password')
 
               # 2. Boot engine and ensure it launches on machine startup
               systemctl start mysqld
