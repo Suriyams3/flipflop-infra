@@ -40,7 +40,7 @@ resource "aws_instance" "flipflop-account-details-service" {
               # 2. Fetch the JSON block and extract the value of 'mypass' securely
               export MYSQL_DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "flipflop-db-credentials" --region ap-south-1 --query SecretString --output text | jq -r '.db_password')
 
-              aws s3 cp s3://flip-flop-bucket/jars/flipflop-account-details-service/flipflop-account-details-service-0.0.1-SNAPSHOT.jar /app/account-service.jar
+              aws s3 cp s3://flip-flop-bucket/jars/flipflop-account-details-service/flipflop-account-details-service-0.0.1-SNAPSHOT.jar /app/flipflop-credit-card-service.jar
               nohup java -jar /app/flipflop-account-details-service.jar > /app/flipflop-account-details-service.log 2>&1 &
               EOF
 
@@ -67,7 +67,7 @@ resource "aws_instance" "flipflop-credit-card-service" {
               export MYSQL_DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "flipflop-db-credentials" --region ap-south-1 --query SecretString --output text | jq -r '.db_password')
 
               export OFFERS_SERVICE_HOST="${aws_instance.flipflop-credit-card-offers-service.private_ip}"
-              aws s3 cp s3://flip-flop-bucket/jars/flipflop-credit-card-service/flipflop-credit-card-service-0.0.1-SNAPSHOT.jar /app/credit-card-service.jar
+              aws s3 cp s3://flip-flop-bucket/jars/flipflop-credit-card-service/flipflop-credit-card-service-0.0.1-SNAPSHOT.jar /app/flipflop-credit-card-service.jar
               nohup java -jar /app/flipflop-credit-card-service.jar > /app/flipflop-credit-card-service.log 2>&1 &
               EOF
 
