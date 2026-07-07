@@ -170,10 +170,10 @@ resource "aws_instance" "db_server" {
               SQL_EOF
 
               # 5. Connect and execute scripts securely using temporary instance token
-              mysql --connect-expired-password -u root -p"$TEMP_ROOT_PASS" --execute="ALTER USER 'root'@'localhost' IDENTIFIED BY 'FlipFlopRootPass123!';"
+              mysql --connect-expired-password -u root -p"$TEMP_ROOT_PASS" --execute="ALTER USER 'root'@'localhost' IDENTIFIED BY '$FETCHED_ROOT_PASS';"
 
               # 6. Apply final application script tables using updated root auth
-              mysql -u root -p'FlipFlopRootPass123!' < /tmp/setup.sql
+              mysql -u root -p"$FETCHED_ROOT_PASS" < /tmp/setup.sql
 
               echo "=== MySQL Database Setup Complete ==="
               EOF
