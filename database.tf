@@ -49,6 +49,9 @@ resource "aws_instance" "db_server" {
               # 1a. Fetch the secure password straight into memory
               FETCHED_ROOT_PASS=$(aws secretsmanager get-secret-value --secret-id "flipflop-db-credentials" --region ap-south-1 --query SecretString --output text | jq -r '.db_password')
 
+              sudo mkdir -p /etc/my.cnf.d
+              echo -e "[mysqld]\nbind-address = 0.0.0.0" | sudo tee -a /etc/my.cnf
+
               # 2. Boot engine and ensure it launches on machine startup
               systemctl start mysqld
               systemctl enable mysqld
