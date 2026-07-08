@@ -68,7 +68,7 @@ resource "aws_instance" "db_server" {
               CREATE DATABASE IF NOT EXISTS flipflop_creditcard_db;
 
               -- Establish isolated database runtime credentials across schemas
-              CREATE USER IF NOT EXISTS 'db_user'@'%' IDENTIFIED BY 'FlipFlopSecurePass123!';
+              CREATE USER IF NOT EXISTS 'db_user'@'%' IDENTIFIED BY '$FETCHED_ROOT_PASS';
               GRANT ALL PRIVILEGES ON flipflop_creditcard_db.* TO 'db_user'@'%';
 
               USE flipflop_creditcard_db;
