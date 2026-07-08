@@ -68,8 +68,8 @@ resource "aws_instance" "db_server" {
               CREATE DATABASE IF NOT EXISTS flipflop_creditcard_db;
 
               -- Establish isolated database runtime credentials across schemas
-              CREATE USER IF NOT EXISTS 'db_user'@'%' IDENTIFIED BY '$FETCHED_ROOT_PASS';
-              GRANT ALL PRIVILEGES ON flipflop_creditcard_db.* TO 'db_user'@'%';
+              CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '$FETCHED_ROOT_PASS';
+              GRANT ALL PRIVILEGES ON flipflop_creditcard_db.* TO 'root'@'%';
 
               USE flipflop_creditcard_db;
 
@@ -96,7 +96,7 @@ resource "aws_instance" "db_server" {
               -- SCHEMA 2: ACCOUNT/PROFILE MICROSERVICE DATABASE
               -- ====================================================================
               CREATE DATABASE IF NOT EXISTS flipflop_account_db;
-              GRANT ALL PRIVILEGES ON flipflop_account_db.* TO 'db_user'@'%';
+              GRANT ALL PRIVILEGES ON flipflop_account_db.* TO 'root'@'%';
 
               USE flipflop_account_db;
 
@@ -145,7 +145,7 @@ resource "aws_instance" "db_server" {
               -- SCHEMA 3: CREDIT CARD OFFERS DATABASE
               -- ====================================================================
               CREATE DATABASE IF NOT EXISTS flipflop_offers_db;
-              GRANT ALL PRIVILEGES ON flipflop_offers_db.* TO 'db_user'@'%';
+              GRANT ALL PRIVILEGES ON flipflop_offers_db.* TO 'root'@'%';
               FLUSH PRIVILEGES;
 
               USE flipflop_offers_db;
