@@ -1,3 +1,30 @@
+resource "aws_security_group" "db_sg" {
+  name        = "flipflop-db-sg"
+  description = "Internal database access controls"
+  vpc_id      = data.aws_vpc.default_network.id
+
+  # Restricts DB access tightly to internal VPC traffic components only
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_vpc.default_network.cidr_block]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["${var.my_home_ip}/32"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
 resource "aws_instance" "db_server" {
   ami                  = var.ami_id
   instance_type        = "t2.micro"
