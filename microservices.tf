@@ -47,7 +47,6 @@ resource "aws_instance" "flipflop-account-details-service" {
   tags = { Name = "flipflop-account-details-service" }
 }
 
-
 resource "aws_instance" "flipflop-credit-card-service" {
   ami                  = var.ami_id
   instance_type        = "t2.micro"
